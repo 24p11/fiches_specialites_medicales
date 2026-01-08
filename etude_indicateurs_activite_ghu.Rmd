@@ -36,15 +36,21 @@ options(knitr.duplicate.label = "allow")
 Les analyses sont réalisées sur la base nationale PMSI.
 
 ## Spécialité médicale
-L'attribution de la spécialité médicale est réalisée pour chaque séjour de la base nationale en fonction de règles définies sur les données de l'AP-HP et qui utilise des critèrés d'âge et de racine de GHM.
+
+L'attribution de la spécialité médicale est réalisée pour chaque séjour de la base nationale. La méthode d'attribution de la spécialité est basée sur les données observées à l'AP-HP. La répartition des séjours en spécialité à l'AP-HP est étudiée grâce à une variables disponible dans le fichier structure qui classe tous les unités de soin selon une typologie proche de la notion de spécialité médicale. Les règles d'attribution de la spécialité issues de ces analyses utilisent des critères d'âge et de racine de GHM, qui dépend elle-même du dignostic principal et du mode de prise en charge (médecine, chirurgie, interventionnel). 
+
+Pour plus de détail sur la méthode employée :
+
+- [Présentation CODIR DIM/DAF Octobre 2025](https://365aphp.sharepoint.com/sites/DST/_layouts/15/guestaccess.aspx?share=IQA8oNMskXtwS6Nr8Q8dRUVFAYl1Zyeq99TJMUA0NbyqKdI&e=iHJlDf)
+- [Etude specialités médicales IDF](https://365aphp.sharepoint.com/sites/DST/_layouts/15/guestaccess.aspx?share=IQCu_hlDGGUCTagCpx9_3QcQAfq7tEwW5pkKsAM2Ah7qGv4&e=TxZCdz) : fichier excel avec des détails sur la méthode, la composition de chaque spécialité et des résultats à l'échelle régionale.
+
 
 Les spécialités suivantes ont été exlcues :
 
 - Radiothérapie : activité libérale non facturée en GHS, comparaisons régionales difficiles avec les données PSMI
 - Dialyse : une part de l'activité des centres privés est mal renseignée par les centres spécialisés ce qui rend les comparaisons réigionales difficiles
-- IVG
 
-Par ailleurs, les résultats pour la spécialité Cancérologie adulte, essentiellement représenté par l'activité de chimiothérapie, ne sont pas présentés dans le détail par spécialité. En effet, l'activité de cancérologie à l'AP-HP est répartie entre les spécialités d'organe et les services d'oncologie, rendant les comparaisons régionales complexes. Un document de synthèse sur l'activité régionale de cancérologie, décliné par organe, est produit par ailleurs tous les ans par le DIM du siège. Ce document est disponible sur dispose.
+Par ailleurs, les résultats pour la spécialité Cancérologie adulte, essentiellement représenté par l'activité de chimiothérapie, ne sont pas présentés dans le détail par spécialité. En effet, l'activité de cancérologie à l'AP-HP est répartie entre les spécialités d'organe et les services d'oncologie, rendant les comparaisons régionales complexes. Un document de synthèse sur l'activité régionale de cancérologie, décliné par organe, est produit par ailleurs tous les ans par le DIM du siège. Ce document est disponible sur dispose. La méthode identifie par ailleurs une spécialité I.V.G. que nous n'avons pas détaillée ici.
 
 ## Indicateurs patients
  
@@ -54,10 +60,10 @@ Par ailleurs, les résultats pour la spécialité Cancérologie adulte, essentie
 - Patients gériatriques : défini par les variables du RUM
   * Age (le jour de l'entrée) >= 75a
 - Précarité : la précarité est défini par les variables administratives du fichier ANOHOSP
-  * Motif (motif de non facturation à l'assurancce maladie):
+  * Motif de non facturation à l'assurancce maladie (Motif)
     - 1 : Patient pris en charge par l'AME
     - 4 : Patient pris en charge par le dispositif des soins urgents
-  * Type_amc (Type de contrat souscrit auprès d'un organisme complémentaire):
+  * Type de contrat souscrit auprès d'un organisme complémentaire (type_amc)
     - 89 : Bénéficiaire de la CMU
 - Sévérité : défini par les variables du RUM
   * Dernière lettre du GHM appartient {3,4,C,D,E}

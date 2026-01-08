@@ -457,7 +457,8 @@ df_res_tot |>
   #dplyr::left_join(df_res_hp) |> 
   dplyr::select(-age2)-> df_res
 
-df_res <- df_res |> dplyr::select(lib_spe_uma,tot,p_spe_ghu,pm_reg,diff_tot,p_diff_tot,diff_pm_reg)
+df_res <- df_res |> dplyr::select(lib_spe_uma,tot,p_spe_ghu,pm_reg,diff_tot,p_diff_tot,diff_pm_reg) |> 
+  dplyr::arrange(lib_spe_uma)
 
 names(df_res)<-c("Spécialité","Nb. sej.",
                  "Prop. spe. GHU",
@@ -475,7 +476,9 @@ names(header)<- c(" ",
                   "Données " %+% max(periode_annee),
                   "Evol " %+% min(periode_annee) %+% "-" %+% max(periode_annee))
 
-df_res|>   kableExtra::kbl() |> 
+df_res|>   
+
+  kableExtra::kbl() |> 
   kableExtra::kable_paper("hover", full_width = TRUE) |> 
   kableExtra::add_header_above(header)
 
