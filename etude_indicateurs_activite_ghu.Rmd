@@ -1,0 +1,134 @@
+---
+title: "Analyse par spécialité médicale `r min(periode_annee)` - `r max(periode_annee)` <br>GHU `r ghu` "
+date: "`r format(Sys.Date(),'%d/%m/%Y')`"
+author: Département d'information médicale, siège AP-HP
+output:
+  html_document:
+    number_sections: true    # Numérotation automatique 1, 1.1, 1.2...
+    toc: true                # Génère le sommaire
+    toc_float: true          # Le sommaire reste visible en scrollant (mode “liste déroulante”)
+    toc_depth: 3             # Niveau de profondeur des titres affichés
+    highlight: kate          # (optionnel) thème des blocs de code
+
+---
+```{r setup-css, results='asis', echo=FALSE, include=FALSE}
+cat("
+    <style>
+    body > .container-fluid {
+      max-width: 90%;
+      margin: auto;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+    </style>
+")
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F, eval = T)
+options(knitr.kable.NA = '')
+options(knitr.duplicate.label = "allow")
+```
+
+# Définition des indicateurs
+
+Les analyses sont réalisées sur la base nationale PMSI.
+
+## Spécialité médicale
+L'attribution de la spécialité médicale est réalisée pour chaque séjour de la base nationale en fonction de règles définies sur les données de l'AP-HP et qui utilise des critèrés d'âge et de racine de GHM.
+
+Les spécialités suivantes ont été exlcues :
+
+- Radiothérapie : activité libérale non facturée en GHS, comparaisons régionales difficiles avec les données PSMI
+- Dialyse : une part de l'activité des centres privés est mal renseignée par les centres spécialisés ce qui rend les comparaisons réigionales difficiles
+- IVG
+
+Par ailleurs, les résultats pour la spécialité Cancérologie adulte, essentiellement représenté par l'activité de chimiothérapie, ne sont pas présentés dans le détail par spécialité. En effet, l'activité de cancérologie à l'AP-HP est répartie entre les spécialités d'organe et les services d'oncologie, rendant les comparaisons régionales complexes. Un document de synthèse sur l'activité régionale de cancérologie, décliné par organe, est produit par ailleurs tous les ans par le DIM du siège. Ce document est disponible sur dispose.
+
+## Indicateurs patients
+ 
+- Entrée par les urgencecs : défini par les variables du RUM
+  * Provenance = 5 (avant 2022)
+  * Passage par une structure des urgences = 5 (après 2022)
+- Patients gériatriques : défini par les variables du RUM
+  * Age (le jour de l'entrée) >= 75a
+- Précarité : la précarité est défini par les variables administratives du fichier ANOHOSP
+  * Motif (motif de non facturation à l'assurancce maladie):
+    - 1 : Patient pris en charge par l'AME
+    - 4 : Patient pris en charge par le dispositif des soins urgents
+  * Type_amc (Type de contrat souscrit auprès d'un organisme complémentaire):
+    - 89 : Bénéficiaire de la CMU
+- Sévérité : défini par les variables du RUM
+  * Dernière lettre du GHM appartient {3,4,C,D,E}
+
+
+\* Attention on obserce des différences importantes des taux de patients précaires entre 2018 et 2024 probablement du à des modifications des modes de prises en charge pour la CMU-C. A revoir.
+
+<br>
+
+# Spécialités adultes
+
+<br>
+
+```{r, echo=FALSE, results='asis'}
+
+age_ref = "ge_18"
+specialites_adultes <- df |> dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% specialite_exclues) |> dplyr::arrange(lib_spe_uma) |> dplyr::pull(lib_spe_uma) |> unique()
+groups <- c(ghu_ref,"APHP","ESPIC","CH","CLCC","Cliniques")
+
+for(specialite in specialites_adultes){
+  
+    df |> filter_df(list(age2 = age_ref,type_hosp=NA,ghu=ghu_ref,lib_spe_uma= specialite, niveau =c("Spéclialité - GHU","Total GHU"))) |> nrow() -> n_row_spe_ghu
+    
+    if(n_row_spe_ghu>0){
+      
+        specialite_print = dplyr::case_when(specialite == "A-Total"~ "Total spécialités adultes",
+                                            TRUE~specialite)
+      
+        res <- knitr::knit_child(path_pg %+%"etude_indicateurs_activite_ghu_level_2.Rmd", 
+                                 quiet = TRUE,
+                                 envir = .GlobalEnv)
+        cat(res, sep = '\n')
+        
+    }
+
+
+}
+
+```
+
+
+```{r, echo=FALSE, results='asis'}
+
+age_ref = "lt_18"
+specialites_pediatriques  <- df |> dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% specialite_exclues) |> dplyr::arrange(lib_spe_uma) |> dplyr::pull(lib_spe_uma) |> unique()
+groups <- c(ghu_ref,"APHP","ESPIC","CH","Cliniques")
+
+
+df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialites_pediatriques, niveau =c("Spéclialité - GHU","Total GHU"))) |> nrow() -> n_row_spe_ped_ghu
+
+if(n_row_spe_ped_ghu>0 & ghu_ref !="GHU.HMN"){
+  cat("# Spécialités pédiatriques")
+  
+  for(specialite in specialites_pediatriques){
+  
+  
+        df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialite, niveau = "Total GHU",annee = 2018)) |> nrow() -> n_row_spe_ghu18
+            df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,lib_spe_uma= specialite, niveau = "Total GHU",annee = 2024)) |> nrow() -> n_row_spe_ghu24
+    
+        if(n_row_spe_ghu18>0 & n_row_spe_ghu24>0){
+          
+            specialite_print = dplyr::case_when(specialite == "A-Total"~ "Total spécialités pédiatriques",
+                                                TRUE~specialite)
+          
+            res <- knitr::knit_child(path_pg %+%"etude_indicateurs_activite_ghu_level_2.Rmd", 
+                                     quiet = TRUE,
+                                     envir = .GlobalEnv)
+            cat(res, sep = '\n')
+        }
+
+    }
+  
+}
+```

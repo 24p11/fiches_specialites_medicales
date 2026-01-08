@@ -1,0 +1,46 @@
+nohop	finess	GHU	Hopital	TRG
+00000	750712184	AP-HP	Siège Ap-Hp	SAP
+00005	920100039	APHP.Nord-Université de Paris	Beaujon	BJN
+00007	750000000	AP-HP	Qualification Msi	FRU
+00009	620100016	APHP.Université Paris Saclay	Berck	BRK
+00010	940100043	APHP.Université Paris Saclay	Bicêtre	BCT
+00011	750100232	APHP.Nord-Université de Paris	Bichat	BCH
+00014	920100013	APHP.Université Paris Saclay	Ambroise Paré	APR
+00016	750801441	APHP.Centre-Université de Paris	Broca	BRC
+00019	950100016	APHP.Nord-Université de Paris	Adélaide Hautval	AHL
+00021	750100166	APHP.Centre-Université de Paris	Cochin	CCH
+00022	920100062	APHP.Centre-Université de Paris	Corentin Celton	CCL
+00023	910100031	APHP.Hôpitaux Universitaires Henri-Mondor	Dupuytren	DPT
+00025	940100019	APHP.Hôpitaux Universitaires Henri-Mondor	Albert Chenevier	ACH
+00026	940100027	APHP.Hôpitaux Universitaires Henri-Mondor	Henri Mondor	HMN
+00028	920100021	APHP.Université Paris Saclay	Antoine Beclère	ABC
+00029	940100050	APHP.Hôpitaux Universitaires Henri-Mondor	Emile Roux	ERX
+00032	930100045	APHP.Hôpitaux Universitaires Paris-Seine-Saint-Denis	Jean Verdier	JVR
+00033	750041543	APHP.Nord-Université de Paris	Bretonneau	BRT
+00036	910100015	APHP.Hôpitaux Universitaires Henri-Mondor	Georges Clémenceau	GCL
+00038	640790150	Hôpital Marin à Hendaye (Pyrénées-Atlantiques)	Hendaye	HND
+00041	750100018	APHP.Centre-Université de Paris	Hôtel-Dieu	HTD
+00042	940100035	APHP.Sorbonne Université	Charles Foix	CFX
+00044	910100023	APHP.Hôpitaux Universitaires Henri-Mondor	Joffre	JFR
+00047	750100042	APHP.Nord-Université de Paris	Lariboisière	LRB
+00049	950100024	APHP.Sorbonne Université	La Roche Guyon	LRG
+00053	920100047	APHP.Nord-Université de Paris	Louis Mourier	LMR
+00056	750100067	APHP.Nord-Université de Paris	Fernand Widal	FWI
+00061	750100208	APHP.Centre-Université de Paris	Necker	NCK
+00064	600100101	Hôpital Paul-Doumer à Liancourt (Oise)	Villemin-Paul Doumer	VPD
+00066	750100125	APHP.Sorbonne Université	Pitie-Salpêtrière	PSL
+00068	920100054	APHP.Université Paris Saclay	Raymond Poincaré	RPC
+00069	930100011	APHP.Hôpitaux Universitaires Paris-Seine-Saint-Denis	René Muret	RMB
+00070	750803454	APHP.Nord-Université de Paris	Robert Debré	RDB
+00072	750100083	APHP.Sorbonne Université	Rothschild	RTH
+00073	750100091	APHP.Sorbonne Université	Saint-Antoine	SAT
+00075	750803447	APHP.Centre-Université de Paris	Hegp	EGP
+00076	750100075	APHP.Nord-Université de Paris	Saint-Louis	SLS
+00079	750100299	APHP.Université Paris Saclay	Sainte-Perine	SPR
+00084	830100012	Hôpital San Salvadour à Hyères (Var)	San Salvadour	SSL
+00087	750100273	APHP.Sorbonne Université	Tenon	TNN
+00088	750100109	APHP.Sorbonne Université	Armand Trousseau	TRS
+00090	750100216	APHP.Centre-Université de Paris	Vaugirard	VGR
+00095	930100037	APHP.Hôpitaux Universitaires Paris-Seine-Saint-Denis	Avicenne	AVC
+00096	940100068	APHP.Université Paris Saclay	Paul Brousse	PBR
+00099	750806226	Hospitalisation à domicile	Had	HAD

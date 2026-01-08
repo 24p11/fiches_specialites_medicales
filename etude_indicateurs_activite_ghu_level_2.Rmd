@@ -1,0 +1,488 @@
+## `r specialite_print`
+
+<br>
+
+
+```{r, echo=FALSE, results='asis'}
+
+if(specialite!="A-Total"){
+  
+  cat("### Définition de la spécialité à l'AP-HP\n")
+  
+  cat("#### Groupes d'activité les plus spécifiques de la spécialité", sep = '\n') 
+
+
+  df_detail_spe_ga_aphp |> 
+      dplyr::filter(lib_spe_uma==specialite,
+                    nb_spe<=3,
+                    p>1) |> 
+      dplyr::arrange(desc(nb)) |> 
+      dplyr::select(ga, libelle_gada_gp, p_print) -> df_ga
+  
+  names(df_ga)<- c("GA","Libelle GA", " ")
+  
+  df_ga |>   kableExtra::kbl() |> 
+  kableExtra::kable_paper("hover", full_width = TRUE) 
+  
+}
+
+  
+```
+ 
+
+
+### Parts de marchés
+
+#### Evolution pluri-annuelle de l'activité (Hospitalisation complète + partielle)
+```{r, echo=FALSE, results='asis'}
+
+
+if(specialite!="A-Total"){
+  
+#Selection des catégories d'établissement ayant au moins une annee une part de marché > 10%
+df_spe_categ<-df |> filter_df(list(age2 = age_ref,type_hosp=NA,niveau = "Spéclialité - Categ",lib_spe_uma= specialite, niveau =c("Spéclialité - Categ"))) |> distinct(annee,categ,tot) |> dplyr::rename(nb = tot)
+df_spe_tot_region<- df |> filter_df(list(age2 = age_ref,type_hosp=NA,niveau = "Total Spéclialité régional",lib_spe_uma= specialite, niveau =c("Spéclialité - Categ")))  |> distinct(annee,tot)
+
+dplyr::full_join(df_spe_categ,df_spe_tot_region) |> 
+  dplyr::mutate(pm = nb*100/tot) |> 
+  dplyr::filter(pm>10) |> 
+  distinct(categ) |> dplyr::pull(categ) -> sel_categ
+
+groups <- c(ghu_ref,sel_categ)
+
+}
+
+if(specialite == "A-Total"){
+  
+  criteres = list(categ=groups,age2 =age_ref,lib_spe_uma = specialite,indicateur = NA,type_hosp=NA)
+  
+}else{
+  
+  criteres = list(categ=groups,age2 =age_ref,lib_spe_uma = specialite,type_hosp=NA)
+  
+}
+
+
+
+
+df |> dplyr::mutate(categ = ifelse(! is.na(ghu),ghu,categ),annee =factor(annee)) |> 
+  filter_df(criteres) |> 
+  dplyr::filter(categ == ghu_ref | is.na(ghu)) |> 
+  dplyr::distinct(annee,categ,ghu,tot) |> dplyr::rename(nb = tot) |> 
+  dplyr::mutate(categ = ifelse(categ==ghu_ref,"APHP " %+% ghu_ref,categ)) ->df_BARPLOT
+
+df_BARPLOT |> dplyr::select(annee,categ,nb) |> dplyr::filter(categ =="APHP " %+% ghu_ref) |> dplyr::mutate(categ = "APHP") |> dplyr::rename(nb_diff = nb) -> df_diff
+
+df_BARPLOT <- df_BARPLOT |> dplyr::left_join(df_diff) |> dplyr::mutate(nb_diff = ifelse(is.na(nb_diff),0,nb_diff),nb= nb-nb_diff) |> dplyr::select(-nb_diff)
+df_BARPLOT_limites <- df_BARPLOT  |>  dplyr::reframe(tot = sum(nb), .by=annee)
+
+
+if(specialite == "A-Total"){
+  
+  criteres = list(niveau ="Total régional",age2 = age_ref,lib_spe_uma = specialite,type_hosp=NA)
+  
+}else{
+  
+  criteres = list(niveau ="Total Spéclialité régional",age2 =age_ref,lib_spe_uma = specialite,type_hosp=NA)
+  
+}
+
+
+df_BARPLOT_tot <- df |> filter_df(criteres) |> 
+  dplyr::mutate(annee = factor(annee)) |> 
+  dplyr::select(annee,tot) 
+
+df_BARPLOT <- df_BARPLOT |>
+  dplyr::mutate(categ = ifelse(categ=="APHP","APHP Autres GHU",categ))
+
+groups_bar_plot = c("CLCC","Cliniques","ESPIC","CH","APHP Autres GHU","APHP " %+% ghu_ref)
+
+colors_define <- c('#FFFF33','#E41A1C','darkgreen', '#984EA3','#377EB8' ,'#a4c7e4')
+names(colors_define)<-groups_bar_plot
+
+colors_define<-colors_define[names(colors_define)%in%c(groups,"APHP Autres GHU","APHP " %+% ghu_ref)]
+
+df_BARPLOT <- df_BARPLOT |>
+  dplyr::mutate(categ = factor(categ,levels = groups_bar_plot)) |> 
+  dplyr::inner_join(df_BARPLOT_tot) |>
+  mutate(f = nb / tot,
+       fl = paste(ifelse(f < 0.015, '', paste0(sprintf("%g", round(f, 3)*100), '%\n', prettyNum(nb, big.mark = " ")))))
+
+get_bar_plot(d_groupe = df_BARPLOT,d_groupe_tot = df_BARPLOT_tot,d_groupe_limites = df_BARPLOT_limites,colors_define)
+
+```
+
+
+#### Synthèse sur la période 
+```{r, echo=FALSE, results='asis'}
+if(specialite == "A-Total"){
+  
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau ="Total régional",annee = c(2018,2024),type_hosp=NA)
+  
+}else{
+  
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau = "Total Spéclialité régional",annee = c(2018,2024),type_hosp=NA)
+  
+}
+
+tot_region <-df |> filter_df(criteres) |> 
+  dplyr::select(age2,annee,tot)
+
+#tot_aphp <-df |> dplyr::filter(age2 == age_ref,lib_spe_uma=="A-Total",niveau == "Total categ",categ =="APHP") |> 
+#  dplyr::mutate(type_tot = "APHP") |> 
+#    dplyr::select(age2,annee,type_tot,tot)
+
+if(specialite == "A-Total"){
+  
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = c(2018,2024),indicateur=NA,type_hosp=NA)
+  
+}else{
+  
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = c(2018,2024),type_hosp=NA)
+  
+}
+
+
+df |> dplyr::mutate(categ = ifelse(!is.na(ghu),ghu,categ),
+                    categ = ifelse(is.na(categ),"Total",categ)) |> 
+  filter_df(criteres) |> 
+  dplyr::distinct(annee,age2,lib_spe_uma,tot,categ,niveau) |> 
+  dplyr::mutate( order = dplyr::case_when(categ == "APHP"~ 1,
+                                         grepl("GHU",categ) ~ 2,
+                                         niveau %in% c("Total categ","Spéclialité - Categ") ~ 3,
+                                         TRUE ~ 4))  |> 
+
+  dplyr::rename(nb= tot) |> 
+  dplyr::left_join(tot_region) |> 
+  dplyr::select(-age2,-lib_spe_uma) |> 
+  dplyr::mutate(p = round(nb*100/tot,1),
+                p = ifelse(niveau == "Total régional",NA,p)) |> 
+  dplyr::select(-tot) |> 
+  tidyr::pivot_wider(names_from = annee,values_from = c(p,nb)) |> 
+  dplyr::arrange(order) |>
+  dplyr::mutate(diff = nb_2024-nb_2018,
+                p_diff = round(diff*100/nb_2018,1),
+                diff_pm = round(p_2024-p_2018,1) ) -> df_html
+prep_indent <- which(grepl("GHU",df_html$categ))
+
+df_html |>   dplyr::select(categ,nb_2018,p_2018,nb_2024,p_2024,diff,p_diff,diff_pm) -> df_html
+  
+
+names(df_html)<-c("Type d'établissement","Nb. sej.","Part. marché","Nb. sej.","Part. marché IDF","Diff Nb sej","% Diff Nb sej.", "Diff PM IDF")
+
+header = c(1,2,2,3)
+names(header)<- c(" ",
+                 min(periode_annee),
+                 max(periode_annee),
+                  "Evol " %+% min(periode_annee) %+% "-" %+% max(periode_annee))
+
+
+df_html |>   kableExtra::kbl() |> 
+  kableExtra::kable_paper("hover", full_width = TRUE) |> 
+  kableExtra::add_indent(prep_indent) |> 
+  kableExtra::add_header_above(c(" " = 1, "2018" = 2, "2024" = 2,"Diff 2024-2018"=3))
+
+#row_spec(3:5, bold = T, color = "white", background = "#D7261E")
+
+#add_indent(c(0,2, 2, 2))
+```
+
+<br>
+
+
+### Taux d'ambulatoire
+
+#### Evolution pluri-annuelle du taux d'ambulatoire
+```{r, echo=FALSE, results='asis'}
+
+#Pour les taux d'ambulatoire :
+# - Niveau total  
+#   * "Total categ"
+#   * "Total GHU"
+# - Niveau spécialité
+#   * Spéclialité - Categ
+#   * Spéclialité - GHU
+
+if(specialite =="A-Total"){
+  
+  criteres <- list(age2 = age_ref,lib_spe_uma = specialite,niveau = c("Total categ","Total GHU"))
+  
+}else{
+  
+  criteres <- list(categ=groups,age2 = age_ref,lib_spe_uma = specialite,niveau = c("Spéclialité - Categ","Spéclialité - GHU"))
+  
+}
+
+
+df |> dplyr::mutate(categ = ifelse(!is.na(ghu),ghu,categ),
+                    categ = ifelse(is.na(categ),"Total",categ)) |> 
+  filter_df(criteres) |> 
+  dplyr::filter(categ == ghu_ref | is.na(ghu)) |> 
+  dplyr::distinct(age2,categ,type_hosp,tot,annee) -> df_prep
+
+df_prep |> dplyr::filter(categ == "APHP",type_hosp =="HP") -> df_test_hp
+
+if(nrow(df_test_hp)> 0 ){
+  df_prep |> 
+    dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
+    tidyr::pivot_wider(names_from = type_hosp,values_from = tot) |> 
+    tidyr::replace_na(list(HC = 0,HP = 0) )|>
+    dplyr::mutate(tx = round(HP*100/tot,1)) -> df_type_hosp
+
+  df_graph<- df_type_hosp |> dplyr::select(categ,annee,tx) |> 
+    tidyr::pivot_wider(names_from = categ,values_from = tx)
+
+  fig<- get_line_ghu(df_graph)
+
+  fig
+}
+
+```
+
+#### Synthèse évolution Hospitalisation complète / Hospitalisation partielle
+```{r, echo=FALSE, results='asis'}
+
+if(specialite =="A-Total"){
+  
+  criteres <- list(age2 = age_ref,lib_spe_uma = specialite,niveau = c("Total categ","Total GHU"))
+  
+}else{
+  
+  criteres <- list(age2 = age_ref,lib_spe_uma = specialite,niveau = c("Spéclialité - Categ","Spéclialité - GHU"))
+  
+}
+
+df |> dplyr::mutate(categ = ifelse(!is.na(ghu),ghu,categ),
+                    categ = ifelse(is.na(categ),"Total",categ)) |> 
+  filter_df(criteres) |> 
+  dplyr::mutate( order = dplyr::case_when(categ == "APHP"~ 1,
+                                         grepl("GHU",categ) ~ 2,
+                                         niveau %in% c("Total categ","Spéclialité - Categ") ~ 3,
+                                         TRUE ~ 4)) |> 
+  dplyr::distinct(order,age2,categ,type_hosp,tot,annee) |> 
+  dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
+  tidyr::pivot_wider(names_from = type_hosp,values_from = tot) |> 
+  dplyr::mutate(tx = round(HP*100/tot,1)) -> df_type_hosp
+
+df_type_hosp |> 
+  dplyr::filter(annee %in% c(min(periode_annee),max(periode_annee))) |> 
+  dplyr::select(-tot) |> 
+  tidyr::pivot_wider(names_from = annee,values_from = c(HC,HP,tx)) |> 
+  dplyr::mutate(diff_HC = HC_2024-HC_2018,
+                p_diff_HC = round(diff_HC*100/HC_2018,1),
+                diff_HP = HP_2024-HP_2018,
+                p_diff_HP = round(diff_HP*100/HP_2018,1),
+                diff_tx = round(tx_2024-tx_2018,1) ) |> 
+  dplyr::arrange(order)-> df_html
+prep_indent <- which(grepl("GHU",df_html$categ))
+
+df_html |>   dplyr::select(categ,HC_2018,HP_2018,tx_2018,HC_2024,HP_2024,tx_2024,diff_HC,p_diff_HC,diff_HP,p_diff_HP,diff_tx) -> df_html
+  
+
+names(df_html)<-c("Type d'établissement","Sej. HC","Sej. HP","Tx ambu","Sej. HC","Sej. HP","Tx ambu","Diff HC","% Diff HC", "Diff HP","% Diff HP", "Diff Tx ambu")
+
+header = c(1,3,3,5)
+names(header)<- c(" ",
+                 min(periode_annee),
+                 max(periode_annee),
+                  "Evol " %+% min(periode_annee) %+% "-" %+% max(periode_annee))
+
+df_html |>   kableExtra::kbl() |> 
+  kableExtra::kable_paper("hover", full_width = TRUE) |> 
+  kableExtra::add_indent(prep_indent) |> 
+  kableExtra::add_header_above(header)
+
+#row_spec(3:5, bold = T, color = "white", background = "#D7261E")
+
+#add_indent(c(0,2, 2, 2))
+```
+
+
+<br>
+
+### Indicateurs patients
+
+
+
+#### Entrée urgences
+```{r, echo=FALSE, results='asis'}
+indicateur_ref = "nb_urg"
+
+df_hist<-get_df_hist_ghu(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+
+fig <- get_hist(df_hist)
+fig <- fig %>% layout(yaxis = list(title = '% Séj. mode entrée urgences'),
+                      xaxis = list(title = "Type d'établissements"),
+                      barmode = 'group')
+fig
+
+```
+
+
+```{r, echo=FALSE, results='asis'}
+if(age_ref=="ge_18"){
+  cat("#### Patients gériatriques")
+  indicateur_ref = "nb_geriatrie"
+
+  df_hist<-get_df_hist_ghu(df|> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+
+  fig <- get_hist(df_hist)
+  fig <- fig %>% layout(yaxis = list(title = '% Séj. patients gériatriques'),
+                      xaxis = list(title = "Type d'établissements"),
+                      barmode = 'group')
+  fig
+
+  
+}
+
+```
+
+
+#### Sévérité
+```{r}
+indicateur_ref = "nb_gravite"
+
+df_hist<-get_df_hist_ghu(df|> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+
+fig <- get_hist(df_hist)
+fig <- fig %>% layout(yaxis = list(title = '% Séj. niv. sévérité 3 & 4'),
+                    xaxis = list(title = "Type d'établissements"),
+                    barmode = 'group')
+fig
+
+```
+
+#### Précarité
+```{r}
+indicateur_ref = "nb_preca"
+
+df_hist<-get_df_hist_ghu(df|> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+
+fig <- get_hist(df_hist)
+
+fig <- fig %>% layout(yaxis = list(title = '% Séj. patients précaires'), 
+                      xaxis = list(title = "Type d'établissements"),
+                      barmode = 'group')
+fig
+
+```
+
+<br>
+
+```{r, echo=FALSE, results='asis'}
+
+if(specialite=="A-Total"){
+  
+cat("\n")
+
+cat("## Cartographie des spécialités du GHU\n")
+  
+  
+#Tableau cartographie globale activité GHU
+# - Niveau
+#    * Total Spéclialité régional : pour les données régionales
+#.   * Spéclialité - Categ : pour les données APHP
+#    * Spéclialité - GHU : pour les données GHU
+
+
+df |> filter_df(list(age2 = age_ref,niveau=c("Spéclialité - GHU"), ghu=ghu_ref)) |> 
+  dplyr::distinct(age2,lib_spe_uma,type_hosp,tot,annee) |> 
+  dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
+  dplyr::rename(nb= tot) |> 
+  #Ajout du total APHP par spécialité
+  dplyr::left_join( df |> filter_df(list(age2 = age_ref,niveau=c("Spéclialité - Categ"), categ="APHP")) |> 
+                    dplyr::distinct(age2,lib_spe_uma,type_hosp,tot,annee) |> 
+                    dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
+                    dplyr::rename(tot_aphp= tot) ) |> 
+  #Ajout du total Régional par spécialité
+  dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total Spéclialité régional"), categ=NA)) |> 
+                     dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
+                     dplyr::select(age2,lib_spe_uma,type_hosp,tot,annee)) |> 
+  #Ajout du total GHU
+  dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total GHU"), ghu=ghu_ref)) |> 
+                  dplyr::select(age2,type_hosp,annee,tot) |> 
+                  dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
+                  dplyr::rename(tot_ghu = tot) ) |>
+  dplyr::filter(! (age2=="lt_18" & lib_spe_uma %in% specialite_ped_exclues )) |> 
+  dplyr::mutate(p_spe_ghu = round(nb*100/tot_ghu,1),
+                pm_reg = round(nb*100/tot,1),
+                pm_aphp = round(nb*100/tot_aphp,1)) -> df_prep
+
+
+#Total, prop GHU, pm APHP la dernière année
+df_prep |> dplyr::filter(type_hosp=="tot",annee  == max(periode_annee)) |> 
+  dplyr::select(age2,lib_spe_uma,p_spe_ghu) -> df_res_spe_ghu
+
+#PM régionale et évolution
+df_prep |> dplyr::filter(type_hosp=="tot",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
+    dplyr::select(age2,annee,lib_spe_uma,pm_reg) |> 
+    tidyr::pivot_wider(names_from = annee,values_from = pm_reg) |> 
+    dplyr::mutate(diff_pm_reg = !!sym(max(periode_annee)) - !!sym(min(periode_annee))) |> 
+    dplyr::select(- !!sym(min(periode_annee))) |> 
+    dplyr::rename(pm_reg = !!sym(max(periode_annee)) ) -> df_res_pm_reg
+
+#Nb HC+HP et évolution période
+df_prep |> dplyr::filter(type_hosp=="tot",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
+    dplyr::select(age2,annee,lib_spe_uma,nb) |> 
+    tidyr::pivot_wider(names_from = annee,values_from = nb) |> 
+    dplyr::mutate(diff_tot = !!sym(max(periode_annee)) - !!sym(min(periode_annee)),
+                  p_diff_tot = round(diff_tot*100/!!sym(min(periode_annee)),1)) |> 
+    dplyr::select(- !!sym(min(periode_annee))) |> 
+    dplyr::rename(tot = !!sym(max(periode_annee)) ) |> 
+    dplyr::filter(!is.na(tot))-> df_res_tot
+
+
+#Nb HC et évolution période
+df_prep |> dplyr::filter(type_hosp=="HC",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
+  dplyr::select(age2,annee,lib_spe_uma,nb) |> 
+  tidyr::pivot_wider(names_from = annee,values_from = nb) |> 
+  dplyr::mutate(diff_hc = !!sym(max(periode_annee)) - !!sym(min(periode_annee)),
+                p_diff_hc = round(diff_hc*100/!!sym(min(periode_annee)),1)) |> 
+  dplyr::select(- !!sym(min(periode_annee))) |> 
+  dplyr::rename(hc = !!sym(max(periode_annee)) ) -> df_res_hc
+
+#Nb HP et évolution période
+df_prep |> dplyr::filter(type_hosp=="HP",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
+  dplyr::select(age2,annee,lib_spe_uma,nb) |> 
+  tidyr::pivot_wider(names_from = annee,values_from = nb) |> 
+  dplyr::mutate(diff_hp = !!sym(max(periode_annee)) - !!sym(min(periode_annee)),
+                p_diff_hp = round(diff_hp*100/!!sym(min(periode_annee)),1)) |> 
+  dplyr::select(- !!sym(min(periode_annee))) |> 
+  dplyr::rename(hp = !!sym(max(periode_annee)) ) -> df_res_hp
+
+df_res_tot |> 
+  dplyr::left_join(df_res_spe_ghu) |> 
+  dplyr::left_join(df_res_pm_reg) |> 
+  #dplyr::left_join(df_res_hc) |> 
+  #dplyr::left_join(df_res_hp) |> 
+  dplyr::select(-age2)-> df_res
+
+df_res <- df_res |> dplyr::select(lib_spe_uma,tot,p_spe_ghu,pm_reg,diff_tot,p_diff_tot,diff_pm_reg)
+
+names(df_res)<-c("Spécialité","Nb. sej.",
+                 "Prop. spe. GHU",
+                 "Part marché reg.",
+                 "Diff sej."%+% min(periode_annee) %+% "-" %+% max(periode_annee),
+                 " % Diff sej. "%+% min(periode_annee) %+% "-" %+% max(periode_annee),
+                 "Evol PM " %+% min(periode_annee) %+% "-" %+% max(periode_annee)
+                # "Nb HC", "Diff HC "%+% min(periode_annee) %+% "-" %+% max(periode_annee),
+                # " % Diff HC "%+% min(periode_annee) %+% "-" %+% max(periode_annee),
+                # "Nb HP", "Diff HP "%+% min(periode_annee) %+% "-" %+% max(periode_annee),
+                # " % Diff HP "%+% min(periode_annee) %+% "-" %+% max(periode_annee)
+                )
+header = c(1,3,3)
+names(header)<- c(" ",
+                  "Données " %+% max(periode_annee),
+                  "Evol " %+% min(periode_annee) %+% "-" %+% max(periode_annee))
+
+df_res|>   kableExtra::kbl() |> 
+  kableExtra::kable_paper("hover", full_width = TRUE) |> 
+  kableExtra::add_header_above(header)
+
+}
+
+
+
+```
+
+<br>
