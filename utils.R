@@ -76,7 +76,7 @@ get_bar_plot<-function(d_groupe,d_groupe_tot,d_groupe_limites,colors_define){
     
   }else{
     
-    y_leg = max(d_groupe_tot$tot)*1.05
+    y_leg = max(d_groupe_tot$tot)*1.1
     
   }
   

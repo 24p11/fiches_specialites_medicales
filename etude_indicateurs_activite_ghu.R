@@ -27,88 +27,6 @@ path_pg <- getwd() %+% "/"
 source(path_pg %+% "utils.R")
 library(plotly)
 
-#Tableau cartographie globale activité GHU
-# - Niveau
-#    * Total Spéclialité régional : pour les données régionales
-#.   * Spéclialité - Categ : pour les données APHP
-#    * Spéclialité - GHU : pour les données GHU
-
-
-df |> filter_df(list(age2 = age_ref,niveau=c("Spéclialité - GHU"), ghu=ghu_ref)) |> 
-  dplyr::distinct(age2,lib_spe_uma,type_hosp,tot,annee) |> 
-  dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
-  dplyr::rename(nb= tot) |> 
-  #Ajout du total APHP par spécialité
-  dplyr::left_join( df |> filter_df(list(age2 = age_ref,niveau=c("Spéclialité - Categ"), categ="APHP")) |> 
-                    dplyr::distinct(age2,lib_spe_uma,type_hosp,tot,annee) |> 
-                    dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
-                    dplyr::rename(tot_aphp= tot) ) |> 
-  #Ajout du total Régional par spécialité
-  dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total Spéclialité régional"), categ=NA)) |> 
-                     dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
-                     dplyr::select(age2,lib_spe_uma,type_hosp,tot,annee)) |> 
-  #Ajout du total GHU
-  dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total GHU"), ghu=ghu_ref)) |> 
-                  dplyr::select(age2,type_hosp,annee,tot) |> 
-                  dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
-                  dplyr::rename(tot_ghu = tot) ) |>
-  dplyr::filter(! (age2=="lt_18" & lib_spe_uma %in% specialite_ped_exclues )) |> 
-  dplyr::mutate(p_spe_ghu = round(nb*100/tot_ghu,1),
-                pm_reg = round(nb*100/tot,1),
-                pm_aphp = round(nb*100/tot_aphp,1)) -> df_prep
-#Total, prop GHU, pm APHP la dernière année
-df_prep |> dplyr::filter(type_hosp=="tot",annee  == max(periode_annee)) |> 
-  dplyr::select(age2,lib_spe_uma,p_spe_ghu,pm_aphp) -> df_res_p_spe_ghu
-
-#PM régionale et évolution
-df_prep |> dplyr::filter(type_hosp=="tot",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
-    dplyr::select(age2,annee,lib_spe_uma,pm_reg) |> 
-    tidyr::pivot_wider(names_from = annee,values_from = pm_reg) |> 
-    dplyr::mutate(diff_pm_aphp = !!sym(max(periode_annee)) - !!sym(min(periode_annee))) |> 
-    dplyr::select(- !!sym(min(periode_annee))) |> 
-    dplyr::rename(pm_reg = !!sym(max(periode_annee)) ) -> df_res_pm_reg
-#Nb HC+HP et évolution période
-df_prep |> dplyr::filter(type_hosp=="tot",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
-    dplyr::select(age2,annee,lib_spe_uma,nb) |> 
-    tidyr::pivot_wider(names_from = annee,values_from = nb) |> 
-    dplyr::mutate(diff_tot = !!sym(max(periode_annee)) - !!sym(min(periode_annee)),
-                  p_diff_tot = round(diff_tot*100/!!sym(min(periode_annee)),1)) |> 
-    dplyr::select(- !!sym(min(periode_annee))) |> 
-    dplyr::rename(tot = !!sym(max(periode_annee)) ) |> 
-    dplyr::filter(!is.na(tot))-> df_res_tot
-  
-#Nb HC et évolution période
-df_prep |> dplyr::filter(type_hosp=="HC",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
-  dplyr::select(age2,annee,lib_spe_uma,nb) |> 
-  tidyr::pivot_wider(names_from = annee,values_from = nb) |> 
-  dplyr::mutate(diff_hc = !!sym(max(periode_annee)) - !!sym(min(periode_annee)),
-                p_diff_hc = round(diff*100/!!sym(min(periode_annee)),1)) -> df_res_hc
-
-
-
-#Nb HC et évolution période
-df_prep |> dplyr::filter(type_hosp=="HC",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
-  dplyr::select(age2,annee,lib_spe_uma,nb) |> 
-  tidyr::pivot_wider(names_from = annee,values_from = nb) |> 
-  dplyr::mutate(diff_hc = !!sym(max(periode_annee)) - !!sym(min(periode_annee)),
-                p_diff_hc = round(diff_hc*100/!!sym(min(periode_annee)),1)) |> 
-  dplyr::select(- !!sym(min(periode_annee))) |> 
-  dplyr::rename(hc = !!sym(max(periode_annee)) ) -> df_res_hc
-
-#Nb HP et évolution période
-df_prep |> dplyr::filter(type_hosp=="HP",annee %in% c(min(periode_annee),max(periode_annee)) ) |> 
-  dplyr::select(age2,annee,lib_spe_uma,nb) |> 
-  tidyr::pivot_wider(names_from = annee,values_from = nb) |> 
-  dplyr::mutate(diff_hp = !!sym(max(periode_annee)) - !!sym(min(periode_annee)),
-                p_diff_hp = round(diff_hp*100/!!sym(min(periode_annee)),1)) |> 
-  dplyr::select(- !!sym(min(periode_annee))) |> 
-  dplyr::rename(hp = !!sym(max(periode_annee)) ) -> df_res_hp
-
-df_res_tot |> 
-  dplyr::left_join(df_res_tx) |> 
-  dplyr::left_join(df_res_hc) |> 
-  dplyr::left_join(df_res_hp) -> df_res
-
 
 
 date_extraction = "20260107"
@@ -171,12 +89,12 @@ for(an in c("18","21","22","23","24")){
   
 }
 
-for(i in 1:nrow(df_ghu)){
+for(i in 1:5){
   
   ghu = df_ghu$ghu[i]
   ghu_ref = df_ghu$ghu_ref[i]
   
-  rmarkdown::render("pgm-r/etude_indicateurs_activite_chirurgicale.Rmd",
+  rmarkdown::render(path_pg %+% "etude_indicateurs_activite_ghu.Rmd",
                     #output_file = "C:/data/wd/Etudes_specialite_medicales_v4.docx",
                     output_file = path_data %+% "Etudes_indicateurs_patients_specialites_chirurgicales_v2.html",
                     envir = .GlobalEnv)
