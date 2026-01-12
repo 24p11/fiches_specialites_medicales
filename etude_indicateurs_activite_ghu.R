@@ -21,8 +21,8 @@
 #   * niveau = Indicateurs - GHU : Nombre de séjours par GHU,specialité et age2  --> une ligne par indicateur
 
 `%+%` <- function(x,y){paste0(x,y)}
-
 path_data = "~/data/pdh/fiches_specialites_medicales/"
+#path_data = "C:/data/pdh/fiches_specialites_medicales/"
 path_pg <- getwd() %+% "/"
 source(path_pg %+% "utils.R")
 library(plotly)
@@ -49,7 +49,7 @@ df<- df |> dplyr::filter(! lib_spe_uma %in% specialite_exclues)
 tab_hop_aphp<-readr::read_delim(path_data %+% "tab_hop_aphp.tsv",delim = "\t")
 names(tab_hop_aphp)<-tolower(names(tab_hop_aphp))
 tab_hop_aphp |> 
-                 dplyr::mutate(ghu_ref = dplyr::case_when(ghu =="APHP.Nord-Université de Paris"  ~ "GHU.Nord",
+                 dplyr::mutate(ghu_ref = dplyr::case_when(ghu=="APHP.Nord-Université de Paris"  ~ "GHU.Nord",
                                                           ghu=="APHP.Université Paris Saclay"~ "GHU.Saclay",
                                                           ghu=="APHP.Sorbonne Université"~ "GHU.SUN",
                                                           ghu=="APHP.Hôpitaux Universitaires Henri-Mondor"~ "GHU.HMN",

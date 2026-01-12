@@ -70,15 +70,16 @@ get_hist<-function(df_hist){
 
 get_bar_plot<-function(d_groupe,d_groupe_tot,d_groupe_limites,colors_define){
 
-  if(length(colors_define)<5){
-    
-    y_leg = max(d_groupe_tot$tot)
-    
-  }else{
-    
-    y_leg = max(d_groupe_tot$tot)*1.1
-    
-  }
+  y_leg = max(d_groupe_limites$tot)*1.05
+  y_lim_max = max(d_groupe_limites$tot)*1.12
+  
+  #if(length(colors_define)<5){
+    #y_leg = max(d_groupe_tot$tot)
+    #y_lim_max = max(d_groupe_limites$tot)*1.25
+  #}else{
+    #y_leg = max(d_groupe_tot$tot)*1.1
+    #y_lim_max = max(d_groupe_limites$tot)*1.2
+    #}
   
   
   plot <- ggplot() +
@@ -99,7 +100,7 @@ get_bar_plot<-function(d_groupe,d_groupe_tot,d_groupe_limites,colors_define){
           legend.position = "bottom",
           legend.title = element_blank(),
           plot.title = element_text(hjust = 0.5)) +
-    ylab('') + xlab('') + ylim(0, max(d_groupe_limites$tot)*1.12)
+    ylab('') + xlab('') + ylim(0, y_lim_max )
   plot <- plot + scale_fill_manual(name = "", values = colors_define)
   
   return(plot)

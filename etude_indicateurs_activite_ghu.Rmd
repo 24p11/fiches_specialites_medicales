@@ -37,7 +37,7 @@ Les analyses sont réalisées sur la base nationale PMSI.
 
 ## Spécialité médicale
 
-L'attribution de la spécialité médicale est réalisée pour chaque séjour de la base nationale. La méthode d'attribution de la spécialité est basée sur les données observées à l'AP-HP. La répartition des séjours en spécialité à l'AP-HP est étudiée grâce à une variables disponible dans le fichier structure qui classe tous les unités de soin selon une typologie proche de la notion de spécialité médicale. Les règles d'attribution de la spécialité issues de ces analyses utilisent des critères d'âge et de racine de GHM, qui dépend elle-même du dignostic principal et du mode de prise en charge (médecine, chirurgie, interventionnel). 
+L'attribution de la spécialité médicale est réalisée pour chaque séjour de la base nationale PMSI. La méthode d'attribution de la spécialité est basée sur les données observées à l'AP-HP. La répartition des séjours en spécialité à l'AP-HP est étudiée grâce à une variable disponible dans le fichier structure qui classe tous les unités de soins selon une typologie proche de la notion de spécialité médicale. Les règles d'attribution de la spécialité issues de ces analyses utilisent des critères d'âge et de racine de GHM, qui dépend elle-même du dignostic principal et du mode de prise en charge (médecine, chirurgie, interventionnel). 
 
 Pour plus de détail sur la méthode employée :
 
@@ -47,10 +47,12 @@ Pour plus de détail sur la méthode employée :
 
 Les spécialités suivantes ont été exlcues :
 
-- Radiothérapie : activité libérale non facturée en GHS, comparaisons régionales difficiles avec les données PSMI
-- Dialyse : une part de l'activité des centres privés est mal renseignée par les centres spécialisés ce qui rend les comparaisons réigionales difficiles
+- Radiothérapie : activité libérale non facturée en GHS, comparaisons régionales difficiles avec les données PMSI
+- Dialyse : une part de l'activité des centres privés est mal renseignée ce qui rend les comparaisons régionales difficiles
 
 Par ailleurs, les résultats pour la spécialité Cancérologie adulte, essentiellement représenté par l'activité de chimiothérapie, ne sont pas présentés dans le détail par spécialité. En effet, l'activité de cancérologie à l'AP-HP est répartie entre les spécialités d'organe et les services d'oncologie, rendant les comparaisons régionales complexes. Un document de synthèse sur l'activité régionale de cancérologie, décliné par organe, est produit par ailleurs tous les ans par le DIM du siège. Ce document est disponible sur dispose. La méthode identifie par ailleurs une spécialité I.V.G. que nous n'avons pas détaillée ici.
+
+Enfin, les analyses ayant été initiallement sur des extractions de la base nationale PMSI, afin de respecter les règles liées à la protection des données personnelles dans les situations cliniques rares. Pour cett raison le socle des données étudiées dans ce document ne porte que sur 90% environ de l'activité régionale. Nous avons vérifié que la modification du socle ne modifiait qu'à la marge l'analyse des parts de marché des différents types d'établissements. Cette particularité sera corrigée dans une prochaine version.
 
 ## Indicateurs patients
  
@@ -81,13 +83,15 @@ Par ailleurs, les résultats pour la spécialité Cancérologie adulte, essentie
 
 age_ref = "ge_18"
 specialites_adultes <- df |> dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% specialite_exclues) |> dplyr::arrange(lib_spe_uma) |> dplyr::pull(lib_spe_uma) |> unique()
-groups <- c(ghu_ref,"APHP","ESPIC","CH","CLCC","Cliniques")
+
 
 for(specialite in specialites_adultes){
   
     df |> filter_df(list(age2 = age_ref,type_hosp=NA,ghu=ghu_ref,lib_spe_uma= specialite, niveau =c("Spéclialité - GHU","Total GHU"))) |> nrow() -> n_row_spe_ghu
     
     if(n_row_spe_ghu>0){
+      
+        groups <- c(ghu_ref,"APHP","ESPIC","CH","CLCC","Cliniques")
       
         specialite_print = dplyr::case_when(specialite == "A-Total"~ "Total spécialités adultes",
                                             TRUE~specialite)
@@ -108,8 +112,10 @@ for(specialite in specialites_adultes){
 ```{r, echo=FALSE, results='asis'}
 
 age_ref = "lt_18"
-specialites_pediatriques  <- df |> dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% specialite_exclues) |> dplyr::arrange(lib_spe_uma) |> dplyr::pull(lib_spe_uma) |> unique()
-groups <- c(ghu_ref,"APHP","ESPIC","CH","Cliniques")
+specialites_pediatriques  <- df |> 
+  dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% c(specialite_exclues,specialite_ped_exclues)) |>
+  dplyr::arrange(lib_spe_uma) |> dplyr::pull(lib_spe_uma) |> unique()
+
 
 
 df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialites_pediatriques, niveau =c("Spéclialité - GHU","Total GHU"))) |> nrow() -> n_row_spe_ped_ghu
@@ -118,10 +124,12 @@ if(n_row_spe_ped_ghu>0 & ghu_ref !="GHU.HMN"){
   cat("# Spécialités pédiatriques")
   
   for(specialite in specialites_pediatriques){
+    
+    groups <- c(ghu_ref,"APHP","ESPIC","CH","Cliniques")
   
   
-        df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialite, niveau = "Total GHU",annee = 2018)) |> nrow() -> n_row_spe_ghu18
-            df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,lib_spe_uma= specialite, niveau = "Total GHU",annee = 2024)) |> nrow() -> n_row_spe_ghu24
+        df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialite, niveau = "Spéclialité - GHU",annee = 2018)) |> nrow() -> n_row_spe_ghu18
+            df |> filter_df(list(ghu=ghu_ref,lib_spe_uma= specialite, niveau = "Spéclialité - GHU",annee = 2024)) |> nrow() -> n_row_spe_ghu24
     
         if(n_row_spe_ghu18>0 & n_row_spe_ghu24>0){
           
