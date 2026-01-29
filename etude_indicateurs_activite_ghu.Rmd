@@ -84,12 +84,11 @@ Enfin, les analyses ayant été initiallement sur des extractions de la base nat
 age_ref = "ge_18"
 specialites_adultes <- df |> dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% specialite_exclues) |> dplyr::arrange(lib_spe_uma) |> dplyr::pull(lib_spe_uma) |> unique()
 
-
 for(specialite in specialites_adultes){
   
-    df |> filter_df(list(age2 = age_ref,type_hosp=NA,ghu=ghu_ref,lib_spe_uma= specialite, niveau =c("Spéclialité - GHU","Total GHU"))) |> nrow() -> n_row_spe_ghu
+    df |> filter_df(list(age2 = age_ref,type_hosp=NA,ghu=ghu_ref,lib_spe_uma= specialite, niveau =c("Spécialité - GHU","Total GHU"))) |> dplyr::filter(nb>15) |> nrow() -> n_row_spe_ghu
     
-    if(n_row_spe_ghu>0){
+    if(n_row_spe_ghu>0 | specialite == "A-Total"){
       
         groups <- c(ghu_ref,"APHP","ESPIC","CH","CLCC","Cliniques")
       
@@ -117,21 +116,20 @@ specialites_pediatriques  <- df |>
   dplyr::arrange(lib_spe_uma) |> dplyr::pull(lib_spe_uma) |> unique()
 
 
-
-df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialites_pediatriques, niveau =c("Spéclialité - GHU","Total GHU"))) |> nrow() -> n_row_spe_ped_ghu
+df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialites_pediatriques, niveau =c("Spécialité - GHU","Total GHU"))) |> nrow() -> n_row_spe_ped_ghu
 
 if(n_row_spe_ped_ghu>0 & ghu_ref !="GHU.HMN"){
   cat("# Spécialités pédiatriques")
   
-  for(specialite in specialites_pediatriques){
+  for(specialite in specialites_pediatriques ){
     
     groups <- c(ghu_ref,"APHP","ESPIC","CH","Cliniques")
   
   
-        df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialite, niveau = "Spéclialité - GHU",annee = 2018)) |> nrow() -> n_row_spe_ghu18
-            df |> filter_df(list(ghu=ghu_ref,lib_spe_uma= specialite, niveau = "Spéclialité - GHU",annee = 2024)) |> nrow() -> n_row_spe_ghu24
+        df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialite, niveau = "Spécialité - GHU",annee = 2018)) |> nrow() -> n_row_spe_ghu18
+            df |> filter_df(list(ghu=ghu_ref,lib_spe_uma= specialite, niveau = "Spécialité - GHU",annee = 2024)) |> nrow() -> n_row_spe_ghu24
     
-        if(n_row_spe_ghu18>0 & n_row_spe_ghu24>0){
+        if(n_row_spe_ghu18>0 & n_row_spe_ghu24>0 | specialite == "A-Total" ){
           
             specialite_print = dplyr::case_when(specialite == "A-Total"~ "Total spécialités pédiatriques",
                                                 TRUE~specialite)

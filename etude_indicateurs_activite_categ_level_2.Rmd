@@ -54,9 +54,8 @@ df_spe_tot_region<- df |> filter_df(list(age2 = age_ref,
 dplyr::full_join(df_spe_categ,df_spe_tot_region) |> 
   dplyr::mutate(pm = nb*100/tot) |> 
   dplyr::filter(pm>10) |> 
-  distinct(categ) |> dplyr::pull(categ) -> sel_categ
+  distinct(categ) |> dplyr::pull(categ) -> groups
 
-groups <- c(ghu_ref,sel_categ)
 
 }
 
@@ -75,21 +74,10 @@ if(specialite == "A-Total"){
 # Création du dataframe df_BARPLOT utilisé pour le barplot
 df |> dplyr::mutate(categ = ifelse(! is.na(ghu),ghu,categ)) |> 
   filter_df(criteres) |> 
-  dplyr::filter(categ == ghu_ref | is.na(ghu)) |> 
+  dplyr::filter(is.na(ghu)) |> 
   dplyr::distinct(annee,categ,ghu,tot) |>
   dplyr::rename(nb = tot) |> 
   dplyr::mutate(categ = ifelse(categ==ghu_ref,"APHP " %+% ghu_ref,categ)) ->df_BARPLOT
-
-# Calcul des effectifs APHP sans GHU REF 
-df_BARPLOT |> dplyr::select(annee,categ,nb) |> 
-  dplyr::filter(categ =="APHP " %+% ghu_ref) |>
-  dplyr::mutate(categ = "APHP") |> 
-  dplyr::rename(nb_diff = nb) -> df_diff
-
-# Ajout des effectifs APHP hors GHU REF au dataframe df_BARPLOT
-df_BARPLOT <- df_BARPLOT |> dplyr::left_join(df_diff) |> 
-  dplyr::mutate(nb_diff = ifelse(is.na(nb_diff),0,nb_diff),nb= nb-nb_diff) |> 
-  dplyr::select(-nb_diff)
 
 df_BARPLOT_limites <- df_BARPLOT  |>  dplyr::reframe(tot = sum(nb), .by=annee)
 
@@ -109,16 +97,14 @@ df_BARPLOT_tot <- df |> filter_df(criteres) |>
   dplyr::mutate(annee = factor(annee)) |> 
   dplyr::select(annee,tot) 
 
-df_BARPLOT <- df_BARPLOT |>
-  dplyr::mutate(categ = ifelse(categ=="APHP","APHP Autres GHU",categ),
-                annee =factor(annee))
+df_BARPLOT <- df_BARPLOT |> dplyr::mutate(annee =factor(annee))
 
-groups_bar_plot = c("CLCC","Cliniques","ESPIC","CH","APHP Autres GHU","APHP " %+% ghu_ref)
+groups_bar_plot = c("CLCC","Cliniques","ESPIC","CH","APHP")
 
-colors_define <- c('#FFFF33','#E41A1C','darkgreen', '#984EA3','#377EB8' ,'#a4c7e4')
+colors_define <- c('#FFFF33','#E41A1C','darkgreen', '#984EA3','#377EB8')
 names(colors_define)<-groups_bar_plot
 
-colors_define<-colors_define[names(colors_define)%in%c(groups,"APHP Autres GHU","APHP " %+% ghu_ref)]
+colors_define<-colors_define[names(colors_define)%in%groups]
 
 df_BARPLOT <- df_BARPLOT |>
   dplyr::mutate(categ = factor(categ,levels = groups_bar_plot)) |> 
@@ -220,11 +206,11 @@ df_html |>   kableExtra::kbl() |>
 
 if(specialite =="A-Total"){
   
-  criteres <- list(age2 = age_ref,lib_spe_uma = specialite,niveau = c("Total categ","Total GHU"))
+  criteres <- list(age2 = age_ref,lib_spe_uma = specialite,niveau = c("Total categ"))
   
 }else{
   
-  criteres <- list(categ=groups,age2 = age_ref,lib_spe_uma = specialite,niveau = c("Spécialité - Categ","Spécialité - GHU"))
+  criteres <- list(categ=groups,age2 = age_ref,lib_spe_uma = specialite,niveau = c("Spécialité - Categ"))
   
 }
 
@@ -328,7 +314,6 @@ if(nrow(df_test_hp)> 0 & nrow(df_test_hc)>0){
 #add_indent(c(0,2, 2, 2))
 ```
 
-
 <br>
 
 ### Indicateurs patients
@@ -339,7 +324,7 @@ if(nrow(df_test_hp)> 0 & nrow(df_test_hc)>0){
 ```{r, echo=FALSE, results='asis'}
 indicateur_ref = "nb_urg"
 
-df_hist<-get_df_hist_ghu(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),age_ref,indicateur_ref,specialite,groups)
 
 fig <- get_hist(df_hist)
 fig <- fig %>% layout(yaxis = list(title = '% Séj. mode entrée urgences'),
@@ -355,7 +340,7 @@ if(age_ref=="ge_18"){
   cat("#### Patients gériatriques")
   indicateur_ref = "nb_geriatrie"
 
-  df_hist<-get_df_hist_ghu(df|> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+  df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),age_ref,indicateur_ref,specialite,groups)
 
   fig <- get_hist(df_hist)
   fig <- fig %>% layout(yaxis = list(title = '% Séj. patients gériatriques'),
@@ -373,7 +358,7 @@ if(age_ref=="ge_18"){
 ```{r}
 indicateur_ref = "nb_gravite"
 
-df_hist<-get_df_hist_ghu(df|> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),age_ref,indicateur_ref,specialite,groups)
 
 fig <- get_hist(df_hist)
 fig <- fig %>% layout(yaxis = list(title = '% Séj. niv. sévérité 3 & 4'),
@@ -387,7 +372,7 @@ fig
 ```{r}
 indicateur_ref = "nb_preca"
 
-df_hist<-get_df_hist_ghu(df|> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),age_ref,indicateur_ref,specialite,groups)
 
 fig <- get_hist(df_hist)
 
@@ -406,7 +391,7 @@ if(specialite=="A-Total"){
   
 cat("\n")
 
-cat("## Cartographie des spécialités du GHU\n")
+cat("## Cartographie des spécialités à l'AP-HP\n")
   
   
 #Tableau cartographie globale activité GHU
@@ -416,28 +401,22 @@ cat("## Cartographie des spécialités du GHU\n")
 #    * Spécialité - GHU : pour les données GHU
 
 
-df |> filter_df(list(age2 = age_ref,niveau=c("Spécialité - GHU"), ghu=ghu_ref)) |> 
+df |> filter_df(list(age2 = age_ref,niveau=c("Spécialité - GHU"), categ="APHP")) |> 
   dplyr::distinct(age2,lib_spe_uma,type_hosp,tot,annee) |> 
   dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
   dplyr::rename(nb= tot) |> 
-  #Ajout du total APHP par spécialité
-  dplyr::left_join( df |> filter_df(list(age2 = age_ref,niveau=c("Spécialité - Categ"), categ="APHP")) |> 
-                    dplyr::distinct(age2,lib_spe_uma,type_hosp,tot,annee) |> 
-                    dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
-                    dplyr::rename(tot_aphp= tot) ) |> 
   #Ajout du total Régional par spécialité
   dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total Spécialité régional"), categ=NA)) |> 
                      dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
                      dplyr::select(age2,lib_spe_uma,type_hosp,tot,annee)) |> 
   #Ajout du total GHU
-  dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total GHU"), ghu=ghu_ref)) |> 
+  dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total categ"),  categ="APHP")) |> 
                   dplyr::select(age2,type_hosp,annee,tot) |> 
                   dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
                   dplyr::rename(tot_ghu = tot) ) |>
   dplyr::filter(! (age2=="lt_18" & lib_spe_uma %in% specialite_ped_exclues )) |> 
   dplyr::mutate(p_spe_ghu = round(nb*100/tot_ghu,1),
-                pm_reg = round(nb*100/tot,1),
-                pm_aphp = round(nb*100/tot_aphp,1)) -> df_prep
+                pm_reg = round(nb*100/tot,1)) -> df_prep
 
 
 #Total, prop GHU, pm APHP la dernière année

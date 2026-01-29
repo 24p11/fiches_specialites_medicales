@@ -21,8 +21,8 @@
 #   * niveau = Indicateurs - GHU : Nombre de séjours par GHU,specialité et age2  --> une ligne par indicateur
 
 `%+%` <- function(x,y){paste0(x,y)}
-path_data = "~/data/pdh/fiches_specialites_medicales/"
-#path_data = "C:/data/pdh/fiches_specialites_medicales/"
+#path_data = "~/data/pdh/fiches_specialites_medicales/"
+path_data = "C:/data/pdh/fiches_specialites_medicales/"
 path_pg <- getwd() %+% "/"
 source(path_pg %+% "utils.R")
 library(plotly)
@@ -65,6 +65,8 @@ df_detail_spe_ga_aphp <- df_detail_spe_ga_aphp |> dplyr::mutate(tot=sum(nb),.by=
   dplyr::mutate(p = round(nb*100/tot),
                 p_print = p %+% "%")
 
+df <-df |> dplyr::mutate(niveau = stringr::str_replace(niveau,"Spéclialité","Spécialité")) -> df
+
 for(i in 1:nrow(df_ghu)){
   
   ghu = df_ghu$ghu[i]
@@ -95,8 +97,7 @@ for(i in 1:5){
   ghu_ref = df_ghu$ghu_ref[i]
   
   rmarkdown::render(path_pg %+% "etude_indicateurs_activite_ghu.Rmd",
-                    #output_file = "C:/data/wd/Etudes_specialite_medicales_v4.docx",
-                    output_file = path_data %+% "Etudes_indicateurs_patients_specialites_chirurgicales_v2.html",
+                    output_file = path_data %+% "Etudes_indicateurs_patients_"%+% ghu %+% "_v2.html",
                     envir = .GlobalEnv)
   
   print(ghu %+% " -  done") 
@@ -105,8 +106,11 @@ for(i in 1:5){
 
 
 
-
-
+df |> 
+  dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% c(specialite_exclues,specialite_ped_exclues)) |>
+  dplyr::distinct(lib_spe_uma) |> 
+  rIndicateurs:::write_xlsx("specialites_pediatriques")
+uhs<-rAphpQueries:::get_structures("uh")
 
 
 

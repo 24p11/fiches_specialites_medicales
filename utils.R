@@ -54,6 +54,32 @@ get_df_hist_ghu<-function(df,ghu_ref,age_ref,indicateur_ref,specialite,groups = 
   return(df_hist)
 }
 
+get_df_hist_categ<-function(df,age_ref,indicateur_ref,specialite,groups = NULL){
+  
+  if(specialite == "A-Total"){
+    
+    niveau_filter = c("Indicateurs - Categ")
+    
+  }else{
+    
+    niveau_filter = c("Spécialité - Categ")
+    
+  }
+  df |> dplyr::filter(age2 == age_ref,
+                      niveau %in% niveau_filter,
+                      lib_spe_uma == specialite,
+                      indicateur == indicateur_ref) |> 
+    dplyr::mutate(categ = ifelse(!is.na(ghu),ghu,categ)) |> 
+    dplyr::select(categ,p,annee) |> 
+    tidyr::pivot_wider(names_from = annee,values_from = p)-> df_hist
+  
+  if(!is.null(groups)){
+    df_hist |> dplyr::mutate(categ = factor(categ,levels = groups)) -> df_hist
+  }
+  
+  return(df_hist)
+}
+
 get_hist<-function(df_hist){
   
   fig <- plot_ly(df_hist, x = ~categ, y = ~`2018`, type = 'bar', name = '2018',
@@ -72,15 +98,7 @@ get_bar_plot<-function(d_groupe,d_groupe_tot,d_groupe_limites,colors_define){
 
   y_leg = max(d_groupe_limites$tot)*1.05
   y_lim_max = max(d_groupe_limites$tot)*1.12
-  
-  #if(length(colors_define)<5){
-    #y_leg = max(d_groupe_tot$tot)
-    #y_lim_max = max(d_groupe_limites$tot)*1.25
-  #}else{
-    #y_leg = max(d_groupe_tot$tot)*1.1
-    #y_lim_max = max(d_groupe_limites$tot)*1.2
-    #}
-  
+
   
   plot <- ggplot() +
     geom_col(data = d_groupe, aes(x = annee, fill = categ, y = nb), alpha = 0.7) +
