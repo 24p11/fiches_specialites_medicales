@@ -41,20 +41,24 @@ if(specialite!="A-Total"){
   
 #Selection des catégories d'établissement ayant au moins une annee une part de marché > 10%
 df_spe_categ<-df |> filter_df(list(age2 = age_ref,
-                                   type_hosp=NA,niveau = "Spécialité - Categ",
-                                   lib_spe_uma= specialite, niveau =c("Spécialité - Categ"))) |>
+                                   type_hosp=NA,
+                                   niveau = "Spécialité - Categ",
+                                   lib_spe_uma= specialite)) |>
   distinct(annee,categ,tot) |> 
   dplyr::rename(nb = tot)
 
 df_spe_tot_region<- df |> filter_df(list(age2 = age_ref,
-                                         type_hosp=NA,niveau = "Total Spécialité régional",
-                                         lib_spe_uma= specialite, niveau =c("Spécialité - Categ")))  |> 
+                                         type_hosp=NA,
+                                         niveau = "Total Spécialité régional",
+                                         lib_spe_uma= specialite))  |> 
   distinct(annee,tot)
 
 dplyr::full_join(df_spe_categ,df_spe_tot_region) |> 
   dplyr::mutate(pm = nb*100/tot) |> 
-  dplyr::filter(pm>10) |> 
-  distinct(categ) |> dplyr::pull(categ) -> groups
+  dplyr::filter(pm>5) |> 
+  distinct(categ) |> dplyr::pull(categ) -> groups_
+
+groups = groups[groups%in%groups_]
 
 
 }
@@ -72,12 +76,10 @@ if(specialite == "A-Total"){
 
 
 # Création du dataframe df_BARPLOT utilisé pour le barplot
-df |> dplyr::mutate(categ = ifelse(! is.na(ghu),ghu,categ)) |> 
+df |> dplyr::filter(is.na(ghu)) |> 
   filter_df(criteres) |> 
-  dplyr::filter(is.na(ghu)) |> 
-  dplyr::distinct(annee,categ,ghu,tot) |>
-  dplyr::rename(nb = tot) |> 
-  dplyr::mutate(categ = ifelse(categ==ghu_ref,"APHP " %+% ghu_ref,categ)) ->df_BARPLOT
+  dplyr::distinct(annee,categ,tot) |>
+  dplyr::rename(nb = tot) ->df_BARPLOT
 
 df_BARPLOT_limites <- df_BARPLOT  |>  dplyr::reframe(tot = sum(nb), .by=annee)
 
@@ -121,11 +123,11 @@ get_bar_plot(d_groupe = df_BARPLOT,d_groupe_tot = df_BARPLOT_tot,d_groupe_limite
 ```{r, echo=FALSE, results='asis'}
 if(specialite == "A-Total"){
   
-  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau ="Total régional",annee = c(2018,2024),type_hosp=NA)
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau ="Total régional",annee = periode_annee,type_hosp=NA)
   
 }else{
   
-  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau = "Total Spécialité régional",annee = c(2018,2024),type_hosp=NA)
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau = "Total Spécialité régional",annee = periode_annee,type_hosp=NA)
   
 }
 
@@ -138,11 +140,11 @@ tot_region <-df |> filter_df(criteres) |>
 
 if(specialite == "A-Total"){
   
-  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = c(2018,2024),indicateur=NA,type_hosp=NA)
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = periode_annee,indicateur=NA,type_hosp=NA)
   
 }else{
   
-  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = c(2018,2024),type_hosp=NA)
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = periode_annee,type_hosp=NA)
   
 }
 
@@ -180,11 +182,16 @@ names(header)<- c(" ",
                  max(periode_annee),
                   "Evol " %+% min(periode_annee) %+% "-" %+% max(periode_annee))
 
+header = c(1,2,2,3)
+names(header)<- c(" ",
+                 min(periode_annee),
+                 max(periode_annee),
+                  "Evol " %+% min(periode_annee) %+% "-" %+% max(periode_annee))
 
 df_html |>   kableExtra::kbl() |> 
   kableExtra::kable_paper("hover", full_width = TRUE) |> 
   kableExtra::add_indent(prep_indent) |> 
-  kableExtra::add_header_above(c(" " = 1, "2018" = 2, "2024" = 2,"Diff 2024-2018"=3))
+  kableExtra::add_header_above(header)
 
 ```
 
@@ -215,10 +222,9 @@ if(specialite =="A-Total"){
 }
 
 
-df |> dplyr::mutate(categ = ifelse(!is.na(ghu),ghu,categ),
-                    categ = ifelse(is.na(categ),"Total",categ)) |> 
+df |> dplyr::filter(is.na(ghu)) |> 
+  dplyr::mutate(categ = ifelse(is.na(categ),"Total",categ)) |> 
   filter_df(criteres) |> 
-  dplyr::filter(categ == ghu_ref | is.na(ghu)) |> 
   dplyr::distinct(age2,categ,type_hosp,tot,annee) -> df_prep
 
 df_prep |> dplyr::filter(categ == "APHP",type_hosp =="HP") -> df_test_hp
@@ -268,7 +274,7 @@ if(nrow(df_test_hp)> 0 & nrow(df_test_hc)>0){
     
   }
   
-  df |> dplyr::mutate(categ = ifelse(!is.na(ghu),ghu,categ),
+    df |> dplyr::mutate(categ = ifelse(!is.na(ghu),ghu,categ),
                       categ = ifelse(is.na(categ),"Total",categ)) |> 
     filter_df(criteres) |> 
     dplyr::mutate( order = dplyr::case_when(categ == "APHP"~ 1,
@@ -309,9 +315,6 @@ if(nrow(df_test_hp)> 0 & nrow(df_test_hc)>0){
     kableExtra::add_header_above(header)
 }
 
-#row_spec(3:5, bold = T, color = "white", background = "#D7261E")
-
-#add_indent(c(0,2, 2, 2))
 ```
 
 <br>
@@ -324,7 +327,10 @@ if(nrow(df_test_hp)> 0 & nrow(df_test_hc)>0){
 ```{r, echo=FALSE, results='asis'}
 indicateur_ref = "nb_urg"
 
-df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),age_ref,indicateur_ref,specialite,groups)
+df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in%c(min(periode_annee),max(periode_annee)),
+                                               is.na(type_hosp)),
+                           age_ref,indicateur_ref,specialite,groups) 
+  
 
 fig <- get_hist(df_hist)
 fig <- fig %>% layout(yaxis = list(title = '% Séj. mode entrée urgences'),
@@ -340,7 +346,9 @@ if(age_ref=="ge_18"){
   cat("#### Patients gériatriques")
   indicateur_ref = "nb_geriatrie"
 
-  df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),age_ref,indicateur_ref,specialite,groups)
+  df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(min(periode_annee),max(periode_annee)),
+                                                 is.na(type_hosp)),
+                             age_ref,indicateur_ref,specialite,groups)
 
   fig <- get_hist(df_hist)
   fig <- fig %>% layout(yaxis = list(title = '% Séj. patients gériatriques'),
@@ -358,7 +366,9 @@ if(age_ref=="ge_18"){
 ```{r}
 indicateur_ref = "nb_gravite"
 
-df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),age_ref,indicateur_ref,specialite,groups)
+df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(min(periode_annee),max(periode_annee)),
+                                                            is.na(type_hosp)),
+                                               age_ref,indicateur_ref,specialite,groups)
 
 fig <- get_hist(df_hist)
 fig <- fig %>% layout(yaxis = list(title = '% Séj. niv. sévérité 3 & 4'),
@@ -372,7 +382,9 @@ fig
 ```{r}
 indicateur_ref = "nb_preca"
 
-df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),age_ref,indicateur_ref,specialite,groups)
+df_hist<-get_df_hist_categ(df |> dplyr::filter(annee %in% c(min(periode_annee),max(periode_annee)),
+                                                            is.na(type_hosp)),
+                                               age_ref,indicateur_ref,specialite,groups)
 
 fig <- get_hist(df_hist)
 
@@ -401,7 +413,7 @@ cat("## Cartographie des spécialités à l'AP-HP\n")
 #    * Spécialité - GHU : pour les données GHU
 
 
-df |> filter_df(list(age2 = age_ref,niveau=c("Spécialité - GHU"), categ="APHP")) |> 
+df |> filter_df(list(age2 = age_ref,niveau=c("Spécialité - Categ"), categ="APHP",ghu=NA)) |> 
   dplyr::distinct(age2,lib_spe_uma,type_hosp,tot,annee) |> 
   dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
   dplyr::rename(nb= tot) |> 
@@ -410,7 +422,7 @@ df |> filter_df(list(age2 = age_ref,niveau=c("Spécialité - GHU"), categ="APHP"
                      dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
                      dplyr::select(age2,lib_spe_uma,type_hosp,tot,annee)) |> 
   #Ajout du total GHU
-  dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total categ"),  categ="APHP")) |> 
+  dplyr::left_join(df |> filter_df(list(age2 = age_ref,niveau=c("Total categ"),  categ="APHP",ghu=NA)) |> 
                   dplyr::select(age2,type_hosp,annee,tot) |> 
                   dplyr::mutate(type_hosp = ifelse(is.na(type_hosp),"tot",type_hosp)) |> 
                   dplyr::rename(tot_ghu = tot) ) |>
@@ -471,15 +483,11 @@ df_res <- df_res |> dplyr::select(lib_spe_uma,tot,p_spe_ghu,pm_reg,diff_tot,p_di
   dplyr::arrange(lib_spe_uma)
 
 names(df_res)<-c("Spécialité","Nb. sej.",
-                 "Prop. spe. GHU",
+                 "Prop. spe. à l'AP-HP",
                  "Part marché reg.",
                  "Diff sej."%+% min(periode_annee) %+% "-" %+% max(periode_annee),
                  " % Diff sej. "%+% min(periode_annee) %+% "-" %+% max(periode_annee),
                  "Evol PM " %+% min(periode_annee) %+% "-" %+% max(periode_annee)
-                # "Nb HC", "Diff HC "%+% min(periode_annee) %+% "-" %+% max(periode_annee),
-                # " % Diff HC "%+% min(periode_annee) %+% "-" %+% max(periode_annee),
-                # "Nb HP", "Diff HP "%+% min(periode_annee) %+% "-" %+% max(periode_annee),
-                # " % Diff HP "%+% min(periode_annee) %+% "-" %+% max(periode_annee)
                 )
 header = c(1,3,3)
 names(header)<- c(" ",

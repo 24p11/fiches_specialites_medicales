@@ -29,10 +29,11 @@ library(plotly)
 
 
 
-date_extraction = "20260107"
+date_extraction = "20260125"
 
 periode_an = c("18","21","22","23","24")
 periode_annee = "20"%+% c("18","21","22","23","24")
+
 
 df<-NULL
 for(an in periode_an){
@@ -41,6 +42,11 @@ for(an in periode_an){
   df <- df |> dplyr::bind_rows(readr::read_csv2(path_data %+% file))
   
 }
+
+df |> dplyr::mutate(niveau =ifelse(niveau=="Total Spéclialité régional","Total Spécialité régional",niveau),
+                    niveau =ifelse(niveau=="Spéclialité - Categ","Spécialité - Categ",niveau),
+                    niveau =ifelse(niveau=="Spéclialité - GHU","Spécialité - GHU",niveau),
+                    ) -> df
 
 specialite_exclues = c("DIALYSE ADULTE","CANCERO ADULTE","DIALYSE PEDIATRIQUE","RADIOTHERAPIE","I.V.G.")
 specialite_ped_exclues <- c("GYNECOLOGIE")
@@ -81,6 +87,17 @@ for(i in 1:nrow(df_ghu)){
   print(ghu %+% " -  done") 
 }
 
+
+ghu = "AP-HP"
+ghu_ref = "AP-HP"
+
+
+
+rmarkdown::render(path_pg %+% "etude_indicateurs_activite_ghu.Rmd",
+                  output_file = path_data %+% "Etudes_indicateurs_patients_"%+% ghu %+% "_v1.html",
+                  envir = .GlobalEnv)
+
+print(ghu %+% " -  done") 
 
 
 df<-NULL

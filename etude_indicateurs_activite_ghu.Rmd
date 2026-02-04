@@ -86,7 +86,16 @@ specialites_adultes <- df |> dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% s
 
 for(specialite in specialites_adultes){
   
-    df |> filter_df(list(age2 = age_ref,type_hosp=NA,ghu=ghu_ref,lib_spe_uma= specialite, niveau =c("Spécialité - GHU","Total GHU"))) |> dplyr::filter(nb>15) |> nrow() -> n_row_spe_ghu
+  ###Traitement pour le niveau GHU
+  if(ghu_ref!="AP-HP"){
+  
+    df |> filter_df(list(age2 = age_ref,
+                         type_hosp=NA,
+                         ghu=ghu_ref,
+                         lib_spe_uma= specialite,
+                         niveau =c("Spécialité - GHU","Total GHU"))) |> 
+      
+      dplyr::filter(nb>15) |> nrow() -> n_row_spe_ghu
     
     if(n_row_spe_ghu>0 | specialite == "A-Total"){
       
@@ -101,6 +110,23 @@ for(specialite in specialites_adultes){
         cat(res, sep = '\n')
         
     }
+  
+  }
+  ###Traitement pour le niveau Categ
+  else{
+    
+    
+        groups <- c("APHP","ESPIC","CH","CLCC","Cliniques")
+      
+        specialite_print = dplyr::case_when(specialite == "A-Total"~ "Total spécialités adultes",
+                                            TRUE~specialite)
+      
+        res <- knitr::knit_child(path_pg %+%"etude_indicateurs_activite_categ_level_2.Rmd", 
+                                 quiet = TRUE,
+                                 envir = .GlobalEnv)
+        cat(res, sep = '\n')
+    
+  }
 
 
 }
@@ -115,19 +141,36 @@ specialites_pediatriques  <- df |>
   dplyr::filter(age2 == age_ref, ! lib_spe_uma %in% c(specialite_exclues,specialite_ped_exclues)) |>
   dplyr::arrange(lib_spe_uma) |> dplyr::pull(lib_spe_uma) |> unique()
 
+criteres_pediatrie<-ifelse(ghu_ref=="",
+                           list(age2 = age_ref,ghu=NA,type_hosp=NA,lib_spe_uma= specialites_pediatriques, niveau =c("Spécialité - GHU","Total GHU")),
+                           list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialites_pediatriques, niveau =c("Spécialité - GHU","Total GHU"))
+)
 
-df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialites_pediatriques, niveau =c("Spécialité - GHU","Total GHU"))) |> nrow() -> n_row_spe_ped_ghu
+df |> filter_df(criteres_pediatrie) |> nrow() -> n_row_spe_ped_ghu
 
 if(n_row_spe_ped_ghu>0 & ghu_ref !="GHU.HMN"){
   cat("# Spécialités pédiatriques")
   
   for(specialite in specialites_pediatriques ){
     
+    
+    ###Traitement pour le niveau GHU
+    if(ghu_ref !="AP-HP"){
+    
     groups <- c(ghu_ref,"APHP","ESPIC","CH","Cliniques")
   
   
-        df |> filter_df(list(age2 = age_ref,ghu=ghu_ref,type_hosp=NA,lib_spe_uma= specialite, niveau = "Spécialité - GHU",annee = 2018)) |> nrow() -> n_row_spe_ghu18
-            df |> filter_df(list(ghu=ghu_ref,lib_spe_uma= specialite, niveau = "Spécialité - GHU",annee = 2024)) |> nrow() -> n_row_spe_ghu24
+        df |> filter_df(list(age2 = age_ref,
+                             ghu=ghu_ref,
+                             type_hosp=NA,
+                             lib_spe_uma= specialite,
+                             niveau = "Spécialité - GHU",
+                             annee = min(periode_annee))) |> nrow() -> n_row_spe_ghu18
+        
+        df |> filter_df(list(ghu=ghu_ref,
+                             lib_spe_uma= specialite,
+                             niveau = "Spécialité - GHU",
+                             annee =  max(periode_annee))) |> nrow() -> n_row_spe_ghu24
     
         if(n_row_spe_ghu18>0 & n_row_spe_ghu24>0 | specialite == "A-Total" ){
           
@@ -141,6 +184,43 @@ if(n_row_spe_ped_ghu>0 & ghu_ref !="GHU.HMN"){
         }
 
     }
+    
+    ###Traitement pour le niveau Categ
+    else{
+      
+      groups <- c("APHP","ESPIC","CH","Cliniques")
+  
+  
+      specialite_print = dplyr::case_when(specialite == "A-Total"~ "Total spécialités pédiatriques",
+                                                TRUE~specialite)
+      
+      df |> filter_df(list(age2 = age_ref,
+                              ghu=NA,
+                             type_hosp=NA,
+                             lib_spe_uma= specialite,
+                             niveau = "Spécialité - Categ",
+                             annee =  min(periode_annee))) |> nrow() -> n_row_spe_ghu18
+        
+      df |> filter_df(list(age2 = age_ref,
+                             ghu=NA,
+                             lib_spe_uma= specialite,
+                             niveau = "Spécialité - Categ",
+                             annee =  max(periode_annee))) |> nrow() -> n_row_spe_ghu24
+      
+      
+      if(n_row_spe_ghu18>0 & n_row_spe_ghu24>0 | specialite == "A-Total" ){
+          
+          res <- knitr::knit_child(path_pg %+%"etude_indicateurs_activite_categ_level_2.Rmd", 
+                                         quiet = TRUE,
+                                         envir = .GlobalEnv)
+          cat(res, sep = '\n')
+          
+      }
+      
+      
+      
+    }
+  }
   
 }
 ```

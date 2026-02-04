@@ -135,11 +135,11 @@ get_bar_plot(d_groupe = df_BARPLOT,d_groupe_tot = df_BARPLOT_tot,d_groupe_limite
 ```{r, echo=FALSE, results='asis'}
 if(specialite == "A-Total"){
   
-  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau ="Total régional",annee = c(2018,2024),type_hosp=NA)
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau ="Total régional",annee = periode_annee,type_hosp=NA)
   
 }else{
   
-  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau = "Total Spécialité régional",annee = c(2018,2024),type_hosp=NA)
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,niveau = "Total Spécialité régional",annee = periode_annee,type_hosp=NA)
   
 }
 
@@ -152,11 +152,11 @@ tot_region <-df |> filter_df(criteres) |>
 
 if(specialite == "A-Total"){
   
-  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = c(2018,2024),indicateur=NA,type_hosp=NA)
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = periode_annee,indicateur=NA,type_hosp=NA)
   
 }else{
   
-  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = c(2018,2024),type_hosp=NA)
+  criteres = list(age2 =age_ref,lib_spe_uma = specialite,annee = periode_annee,type_hosp=NA)
   
 }
 
@@ -198,7 +198,7 @@ names(header)<- c(" ",
 df_html |>   kableExtra::kbl() |> 
   kableExtra::kable_paper("hover", full_width = TRUE) |> 
   kableExtra::add_indent(prep_indent) |> 
-  kableExtra::add_header_above(c(" " = 1, "2018" = 2, "2024" = 2,"Diff 2024-2018"=3))
+  kableExtra::add_header_above(header)
 
 ```
 
@@ -339,7 +339,7 @@ if(nrow(df_test_hp)> 0 & nrow(df_test_hc)>0){
 ```{r, echo=FALSE, results='asis'}
 indicateur_ref = "nb_urg"
 
-df_hist<-get_df_hist_ghu(df |> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+df_hist<-get_df_hist_ghu(df |> dplyr::filter(annee %in% periode_annee,is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
 
 fig <- get_hist(df_hist)
 fig <- fig %>% layout(yaxis = list(title = '% Séj. mode entrée urgences'),
@@ -351,11 +351,12 @@ fig
 
 
 ```{r, echo=FALSE, results='asis'}
-if(age_ref=="ge_18"){
+if(age_ref=="ge_18" & specialite!="OBSTETRIQUE"){
   cat("#### Patients gériatriques")
   indicateur_ref = "nb_geriatrie"
 
-  df_hist<-get_df_hist_ghu(df|> dplyr::filter(annee %in% c(2018,2024),is.na(type_hosp)),ghu_ref,age_ref,indicateur_ref,specialite,groups)
+  df_hist<-get_df_hist_ghu(df|> dplyr::filter(annee %in% c(min(periode_annee),max(periode_annee)),is.na(type_hosp)),
+                           ghu_ref,age_ref,indicateur_ref,specialite,groups)
 
   fig <- get_hist(df_hist)
   fig <- fig %>% layout(yaxis = list(title = '% Séj. patients gériatriques'),
