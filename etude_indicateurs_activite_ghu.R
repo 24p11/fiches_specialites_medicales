@@ -48,8 +48,22 @@ df |> dplyr::mutate(niveau =ifelse(niveau=="Total Spéclialité régional","Tota
                     niveau =ifelse(niveau=="Spéclialité - GHU","Spécialité - GHU",niveau),
                     ) -> df
 
+spe_ped<-c("PSYCHIATRIE INFANTO-JUVENILE NON SECTORISE","PED.HEMATO.IMMU.CANC",
+           "PEDIATRIE CARDIO.","CHIR.INF.ORTHOPED.","CHIRURGIE CARDIO-VASCULAIRE INFANTILE",
+           "CHIR.INF.VISCERALE","CHIRURGIE CARDIO-VASCULAIRE INFANTILE",   "CHIR.INF.VISCERALE",
+           "DERMATO-PEDIATRIQUE","DIALYSE PEDIATRIQUE",    "PEDIATRIE GENERALE","PEDIATRIE ENDOCRINO.",
+           "CLINIQUE   PED.HEMATO.IMMU.CANC",  "PED.HEPATO-GASTRO.","PEDIATRIE NEPHRO.","NEURO-CHIRURGIE INFANTILE",
+           "NEUROLOGIE PEDIATRIE" , "ORL INFANTILE",   "OPHTALMOLOGIE PEDIATRIQUE",
+           "PHYSIOLOGIE PEDIATRIQUE","PEDIATRIE PNEUMO.","PSYCHIATRIE INFANTO-JUVENILE NON SECTORISE",
+           "RADIOTHERAPIE PED.",   "SOINS PALLIATIFS PED.","STO.CHIR.MAX.FAC.INF",
+           "THERAPIE TRANSFUSION PED.",    "TRAITEMENT BRULES PEDIATRIE")
+
 specialite_exclues = c("DIALYSE ADULTE","CANCERO ADULTE","DIALYSE PEDIATRIQUE","RADIOTHERAPIE","I.V.G.")
 specialite_ped_exclues <- c("GYNECOLOGIE")
+
+df |>   dplyr::filter( ! (!lib_spe_uma %in%spe_ped & age2=="lt_18") ) -> df
+
+
 df<- df |> dplyr::filter(! lib_spe_uma %in% specialite_exclues)
 
 tab_hop_aphp<-readr::read_delim(path_data %+% "tab_hop_aphp.tsv",delim = "\t")
@@ -72,6 +86,15 @@ df_detail_spe_ga_aphp <- df_detail_spe_ga_aphp |> dplyr::mutate(tot=sum(nb),.by=
                 p_print = p %+% "%")
 
 df <-df |> dplyr::mutate(niveau = stringr::str_replace(niveau,"Spéclialité","Spécialité")) -> df
+
+df |> dplyr::filter(!is.na(indicateur)) |> dplyr::mutate(indicateur = stringr::str_replace(indicateur,"nb_","")) |> 
+  tidyr::pivot_wider(names_from = indicateur,values_from = c(nb,p)) |>
+  dplyr::bind_rows(df |> dplyr::filter(is.na(indicateur)) |> dplyr::select(-indicateur,-nb,-p)) |> 
+  dplyr::mutate(age = ifelse(age2=="ge_18","Adultes","Pédiatrie")) |> 
+  dplyr::select(age,niveau,categ,ghu,type_hosp,lib_spe_uma,tot,nb_urg,p_urg,nb_preca,p_preca, nb_geriatrie,p_geriatrie, nb_gravite,p_gravite) |> 
+  dplyr::filter(lib_spe_uma==specialite)
+  rIndicateurs:::write_xlsx("base_fiches_specialites_medicales",path_out=path_data)
+
 
 for(i in 1:nrow(df_ghu)){
   
@@ -133,3 +156,9 @@ uhs<-rAphpQueries:::get_structures("uh")
 
 
 
+df |> dplyr::filter(!is.na(indicateur)) |> dplyr::mutate(indicateur = stringr::str_replace(indicateur,"nb_","")) |> 
+  tidyr::pivot_wider(names_from = indicateur,values_from = c(nb,p)) |>
+  dplyr::bind_rows(df |> dplyr::filter(is.na(indicateur)) |> dplyr::select(-indicateur,-nb,-p)) |> 
+  dplyr::mutate(age = ifelse(age2=="ge_18","Adultes","Pédiatrie")) |> 
+  dplyr::select(age,niveau,categ,ghu,type_hosp,lib_spe_uma,tot,nb_urg,p_urg,nb_preca,p_preca, nb_geriatrie,p_geriatrie, nb_gravite,p_gravite) |> 
+  dplyr::filter(!lib_spe_uma %in%spe_ped,age=="Pédiatrie" )

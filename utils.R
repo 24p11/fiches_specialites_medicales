@@ -35,7 +35,7 @@ get_df_hist_ghu<-function(df,ghu_ref,age_ref,indicateur_ref,specialite,groups = 
     
   }else{
     
-    niveau_filter = c("Spéclialité - GHU","Spéclialité - Categ")
+    niveau_filter = c("Spécialité - GHU","Spécialité - Categ")
     
   }
   df |> dplyr::filter(age2 == age_ref,

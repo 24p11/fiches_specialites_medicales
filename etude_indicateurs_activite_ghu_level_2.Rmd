@@ -202,6 +202,48 @@ df_html |>   kableExtra::kbl() |>
 
 ```
 
+```{r download-link-synthese, echo=FALSE, results='asis'}
+# Générer le contenu CSV
+csv_content <- capture.output(
+  write.table(df_html, file = stdout(), row.names = FALSE, na = "", fileEncoding =  "CP1252",sep = ";")
+)
+csv_content <- paste(csv_content, collapse = "\r\n")
+
+# 2. Ajouter le BOM (Byte Order Mark) pour Excel
+bom <- charToRaw("\xEF\xBB\xBF")  # BOM pour UTF-8 (Excel le reconnaît mieux)
+csv_with_bom <- rawToChar(c(bom, charToRaw(csv_content)))
+
+# 3. Encoder en base64 pour éviter les problèmes
+csv_base64 <- base64enc::base64encode(charToRaw(csv_with_bom))
+
+# Générer le bouton avec JavaScript
+cat(sprintf('
+<button onclick="downloadCSV(\'%s\')" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+  Télécharger en CSV
+</button>
+
+<script>
+function downloadCSV(base64Data) {
+  // Décoder le contenu base64
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  const blob = new Blob([bytes], {type: "text/csv;charset=windows-1252;"});
+
+  // Créer un lien de téléchargement
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "synthse_periode.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+</script>
+', csv_base64))
+```
+
 <br>
 
 
@@ -328,6 +370,50 @@ if(nrow(df_test_hp)> 0 & nrow(df_test_hc)>0){
 #add_indent(c(0,2, 2, 2))
 ```
 
+
+
+
+```{r download-link-evolution, echo=FALSE, results='asis'}
+# Générer le contenu CSV
+csv_content <- capture.output(
+  write.table(df_html, file = stdout(), row.names = FALSE, na = "", fileEncoding =  "CP1252",sep = ";")
+)
+csv_content <- paste(csv_content, collapse = "\r\n")
+
+# 2. Ajouter le BOM (Byte Order Mark) pour Excel
+bom <- charToRaw("\xEF\xBB\xBF")  # BOM pour UTF-8 (Excel le reconnaît mieux)
+csv_with_bom <- rawToChar(c(bom, charToRaw(csv_content)))
+
+# 3. Encoder en base64 pour éviter les problèmes
+csv_base64 <- base64enc::base64encode(charToRaw(csv_with_bom))
+
+# Générer le bouton avec JavaScript
+cat(sprintf('
+<button onclick="downloadCSV(\'%s\')" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+  Télécharger en CSV
+</button>
+
+<script>
+function downloadCSV(base64Data) {
+  // Décoder le contenu base64
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  const blob = new Blob([bytes], {type: "text/csv;charset=windows-1252;"});
+
+  // Créer un lien de téléchargement
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "evolution_hc_hp.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+</script>
+', csv_base64))
+```
 
 <br>
 
@@ -520,4 +606,49 @@ df_res|>
 
 ```
 
-<br>
+
+```{r download-link-carto, echo=FALSE, results='asis'}
+
+if(specialite=="A-Total"){
+  # Générer le contenu CSV
+  csv_content <- capture.output(
+    write.table(df_res, file = stdout(), row.names = FALSE, na = "", fileEncoding =  "CP1252",sep = ";")
+  )
+  csv_content <- paste(csv_content, collapse = "\r\n")
+  
+  # 2. Ajouter le BOM (Byte Order Mark) pour Excel
+  bom <- charToRaw("\xEF\xBB\xBF")  # BOM pour UTF-8 (Excel le reconnaît mieux)
+  csv_with_bom <- rawToChar(c(bom, charToRaw(csv_content)))
+  
+  # 3. Encoder en base64 pour éviter les problèmes
+  csv_base64 <- base64enc::base64encode(charToRaw(csv_with_bom))
+  
+  # Générer le bouton avec JavaScript
+  cat(sprintf('
+  <button onclick="downloadCSV(\'%s\')" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+    Télécharger en CSV
+  </button>
+  
+  <script>
+  function downloadCSV(base64Data) {
+    // Décoder le contenu base64
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], {type: "text/csv;charset=windows-1252;"});
+  
+    // Créer un lien de téléchargement
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "carto.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+  </script>
+  ', csv_base64))
+}
+
+```
